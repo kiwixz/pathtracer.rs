@@ -1,0 +1,77 @@
+width = 640
+height = 480
+samples = 64
+min_bounces = 6
+max_bounces = 12
+background_color = [0, 0, 0]
+
+[camera]
+position = [0, 10, 40]
+rotation = [0.0, -2.5, 0.0]
+scale = [1, 1, 1]
+field_of_view = 30
+
+
+[[planes]]  # left
+position = [-10, 0, 0]
+rotation = [0, 0, 90]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0.75, 0.25, 0.25]
+
+[[planes]]  # top
+position = [0.0, 16.18, 0.0]
+rotation = [0, 0, 0]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
+
+[[planes]]  # right
+position = [10, 0, 0]
+rotation = [0, 0, 90]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0.25, 0.25, 0.75]
+
+[[planes]]  # bottom
+position = [0, 0, 0]
+rotation = [0, 0, 0]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
+
+[[planes]]  # back
+position = [0, 0, -18]
+rotation = [0, 90, 0]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
+
+[[planes]]  # front
+position = [0, 0, 41]
+rotation = [0, 90, 0]
+reflection = "diffuse"
+emission = [0, 0, 0]
+color = [0, 0, 0]
+
+
+[[spheres]]  # light
+position = [0.0, 116.1, 0.0]
+radius = 100
+reflection = "diffuse"
+emission = [12, 12, 12]
+color = [0, 0, 0]
+
+[[spheres]]  # mirror
+position = [-4.5, 3.5, -8.0]
+radius = 3.25
+reflection = "specular"
+emission = [0, 0, 0]
+color = [1, 1, 1]
+
+[[spheres]]  # glass
+position = [4.5, 3.5, -1.0]
+radius = 3.25
+reflection = "refractive"
+emission = [0, 0, 0]
+color = [1, 1, 1]
