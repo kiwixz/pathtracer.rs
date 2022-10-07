@@ -22,18 +22,6 @@ pub struct Camera {
 }
 
 #[derive(serde::Deserialize)]
-pub enum Reflection {
-    #[serde(rename = "diffuse")]
-    Diffuse,
-
-    #[serde(rename = "refractive")]
-    Refractive,
-
-    #[serde(rename = "specular")]
-    Specular,
-}
-
-#[derive(serde::Deserialize)]
 pub struct Plane {
     pub position: [f64; 3],
     pub rotation: [f64; 3],
@@ -49,4 +37,16 @@ pub struct Sphere {
     pub reflection: Reflection,
     pub emission: [f64; 3],
     pub color: [f64; 3],
+}
+
+#[derive(serde::Deserialize)]
+pub enum Reflection {
+    #[serde(rename = "diffuse")]
+    Diffuse,
+
+    #[serde(rename = "refractive")]
+    Refractive,
+
+    #[serde(rename = "specular")]
+    Specular,
 }

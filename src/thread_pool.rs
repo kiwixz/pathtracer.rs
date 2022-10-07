@@ -1,12 +1,17 @@
+use std::{
+    num::NonZeroUsize,
+    sync::{mpsc, Arc, Mutex},
+};
+
 pub struct Static {
     workers: Vec<Worker>,
-    sender: Option<std::sync::mpsc::Sender<Task>>,
+    sender: Option<mpsc::Sender<Task>>,
 }
 
 impl Static {
-    pub fn build(size: std::num::NonZeroUsize) -> Result<Static, String> {
-        let (sender, receiver) = std::sync::mpsc::channel();
-        let receiver = std::sync::Arc::new(std::sync::Mutex::new(receiver));
+    pub fn build(size: NonZeroUsize) -> Result<Static, String> {
+        let (sender, receiver) = mpsc::channel();
+        let receiver = Arc::new(Mutex::new(receiver));
 
         let mut workers = Vec::with_capacity(size.get());
         for _ in 0..size.get() {
@@ -39,7 +44,7 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(receiver: std::sync::Arc<std::sync::Mutex<std::sync::mpsc::Receiver<Task>>>) -> Worker {
+    fn new(receiver: Arc<Mutex<mpsc::Receiver<Task>>>) -> Worker {
         Worker {
             handle: Some(std::thread::spawn(move || loop {
                 let task = receiver.lock().unwrap().recv();
