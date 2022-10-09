@@ -23,9 +23,9 @@ impl Scene {
                 Box::new(Plane::new(
                     plane.position.into(),
                     &Rotation3::from_euler_angles(
-                        plane.rotation[0],
-                        plane.rotation[1],
-                        plane.rotation[2],
+                        plane.rotation[0].to_radians(),
+                        plane.rotation[1].to_radians(),
+                        plane.rotation[2].to_radians(),
                     ),
                 )),
             ))
