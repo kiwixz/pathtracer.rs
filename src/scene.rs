@@ -1,52 +1,62 @@
-#[derive(serde::Deserialize)]
+use std::error::Error;
+
+use nalgebra::Rotation3;
+
+use crate::shapes::{plane::Plane, sphere::Sphere, Shape};
+
+pub mod config;
+
 pub struct Scene {
-    pub width: i32,
-    pub height: i32,
-    pub samples: i32,
-    pub min_bounces: i32,
-    pub max_bounces: i32,
-    pub background_color: [f64; 3],
-
-    pub camera: Camera,
-
-    pub planes: Vec<Plane>,
-    pub spheres: Vec<Sphere>,
+    pub config: config::Scene,
+    pub objects: Vec<Object>,
 }
 
-#[derive(serde::Deserialize)]
-pub struct Camera {
-    pub position: [f64; 3],
-    pub rotation: [f64; 3],
-    pub scale: [f64; 3],
-    pub field_of_view: f64,
+impl Scene {
+    pub fn open(path: &str) -> Result<Scene, Box<dyn Error>> {
+        let file = std::fs::read_to_string(path)?;
+        let config: config::Scene = toml::from_str(&file)?;
+
+        let mut objects = Vec::with_capacity(config.planes.len() + config.spheres.len());
+        for plane in &config.planes {
+            objects.push(Object::new(
+                plane.object.clone(),
+                Box::new(Plane::new(
+                    plane.position.into(),
+                    &Rotation3::from_euler_angles(
+                        plane.rotation[0],
+                        plane.rotation[1],
+                        plane.rotation[2],
+                    ),
+                )),
+            ))
+        }
+        for sphere in &config.spheres {
+            objects.push(Object::new(
+                sphere.object.clone(),
+                Box::new(Sphere::new(sphere.position.into(), sphere.radius)),
+            ))
+        }
+
+        Ok(Scene { config, objects })
+    }
 }
 
-#[derive(serde::Deserialize)]
-pub struct Plane {
-    pub position: [f64; 3],
-    pub rotation: [f64; 3],
-    pub reflection: Reflection,
+pub struct Object {
+    pub shape: Box<dyn Shape>,
+    pub diffusion: [f64; 3],
+    pub specular: [f64; 3],
+    pub refraction: [f64; 3],
     pub emission: [f64; 3],
-    pub color: [f64; 3],
 }
 
-#[derive(serde::Deserialize)]
-pub struct Sphere {
-    pub position: [f64; 3],
-    pub radius: f64,
-    pub reflection: Reflection,
-    pub emission: [f64; 3],
-    pub color: [f64; 3],
-}
-
-#[derive(serde::Deserialize)]
-pub enum Reflection {
-    #[serde(rename = "diffuse")]
-    Diffuse,
-
-    #[serde(rename = "refractive")]
-    Refractive,
-
-    #[serde(rename = "specular")]
-    Specular,
+impl Object {
+    fn new(config: config::Object, shape: Box<dyn Shape>) -> Object {
+        Object {
+            shape,
+            diffusion: config.diffusion,
+            specular: config.specular,
+            refraction: config.refraction,
+            emission: config.emission,
+        }
+    }
 }

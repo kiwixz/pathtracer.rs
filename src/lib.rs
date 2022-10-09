@@ -1,31 +1,35 @@
+mod ray;
 mod scene;
+mod shapes;
 mod thread_pool;
 
-use scene::Scene;
 use std::{
     error::Error,
     num::NonZeroUsize,
     sync::{mpsc, Arc},
 };
 
+use nalgebra::{Point3, Unit, Vector2, Vector3};
+
+use ray::Ray;
+use scene::Scene;
+
 pub fn run() -> Result<(), Box<dyn Error>> {
+    let scene: Arc<Scene> = Arc::new(Scene::open("scenes/cornell.toml")?);
+
     let workers = std::thread::available_parallelism().unwrap_or(NonZeroUsize::new(1).unwrap());
-
-    let scene_toml = std::fs::read_to_string("scenes/cornell.toml")?;
-    let scene: Arc<Scene> = Arc::new(toml::from_str(&scene_toml)?);
-
     let (sender, receiver) = mpsc::sync_channel(workers.get() * 2);
 
     let pool = thread_pool::Static::build(workers)?;
-    for _ in 0..scene.samples {
+    for _ in 0..scene.config.samples {
         let sender = sender.clone();
         let scene = scene.clone();
-        pool.submit(move || sender.send(pathtrace_sample(&scene).unwrap()).unwrap());
+        pool.submit(move || sender.send(pathtrace_sample(&scene)).unwrap());
     }
 
     drop(sender);
 
-    let mut image = vec![[0.0, 0.0, 0.0]; (scene.width * scene.height) as usize];
+    let mut image = vec![[0.0, 0.0, 0.0]; (scene.config.width * scene.config.height) as usize];
     while let Ok(sample) = receiver.recv() {
         for (image_pixel, sample_pixel) in image.iter_mut().zip(sample) {
             for (image_color, sample_color) in image_pixel.iter_mut().zip(sample_pixel) {
@@ -35,19 +39,20 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     }
     for pixel in image.iter_mut() {
         for color in pixel.iter_mut() {
-            *color /= scene.samples as f64;
+            *color /= scene.config.samples as f64;
         }
     }
 
     let file = std::fs::File::create("output.png")?;
-    let mut encoder = png::Encoder::new(file, scene.width as u32, scene.height as u32);
+    let mut encoder =
+        png::Encoder::new(file, scene.config.width as u32, scene.config.height as u32);
     encoder.set_color(png::ColorType::Rgb);
     let mut writer = encoder.write_header()?;
     writer.write_image_data(
         &image
             .iter()
             .flatten()
-            .map(|color| (color * 256.0) as u8)
+            .map(|color| (color * 255.0) as u8)
             .collect::<Vec<u8>>(),
     )?;
     writer.finish()?;
@@ -55,16 +60,39 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn pathtrace_sample(scene: &Scene) -> Result<Vec<[f64; 3]>, Box<dyn Error>> {
-    (0..scene.height)
-        .flat_map(|y| (0..scene.width).map(move |x| Ok(pathtrace_pixel(scene, x, y)?)))
+fn pathtrace_sample(scene: &Scene) -> Vec<[f64; 3]> {
+    (0..scene.config.height)
+        .flat_map(|y| (0..scene.config.width).map(move |x| pathtrace_pixel(scene, x, y)))
         .collect()
 }
 
-fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Result<[f64; 3], Box<dyn Error>> {
-    Ok([
-        x as f64 / scene.width as f64,
-        y as f64 / scene.height as f64,
-        0.0,
-    ])
+fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> [f64; 3] {
+    let camera_position = Point3::from(scene.config.camera.position);
+
+    let pixel_on_screen = Vector2::new(
+        x as f64 / scene.config.width as f64,
+        y as f64 / scene.config.height as f64,
+    );
+
+    let ray = Ray {
+        position: camera_position,
+        direction: Unit::new_normalize(Vector3::new(pixel_on_screen[0], pixel_on_screen[1], -1.0)),
+    };
+
+    radiance(scene, &ray)
+}
+
+fn radiance(scene: &Scene, ray: &Ray) -> [f64; 3] {
+    let closest_match = scene
+        .objects
+        .iter()
+        .filter_map(|o| Some((o, o.shape.intersect(ray)?)))
+        .min_by(|a, b| a.1.distance.partial_cmp(&b.1.distance).unwrap());
+
+    if closest_match.is_none() {
+        return scene.config.background_color;
+    }
+    let (object, intersection) = closest_match.unwrap();
+
+    object.diffusion
 }
