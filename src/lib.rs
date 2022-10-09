@@ -71,7 +71,7 @@ fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> [f64; 3] {
     let ratio = std::cmp::min(scene.config.width, scene.config.height) as f64;
     let pixel_on_screen = Point3::new(
         x as f64 / ratio * 2.0 - scene.config.width as f64 / ratio,
-        y as f64 / ratio * 2.0 - scene.config.height as f64 / ratio,
+        (scene.config.height - y) as f64 / ratio * 2.0 - scene.config.height as f64 / ratio,
         -1.0,
     );
 
