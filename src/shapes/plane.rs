@@ -27,8 +27,12 @@ impl Shape for Plane {
         }
 
         let ray_to_pos = self.position - ray.position;
-
         let distance = ray_to_pos.dot(&self.up) / den;
+        if distance <= 0.0 {
+            // plane is behind
+            return None;
+        }
+
         return Some(Intersection {
             distance,
             point: ray.position + ray.direction.scale(distance),
