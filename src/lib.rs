@@ -9,7 +9,7 @@ use std::{
     sync::{mpsc, Arc},
 };
 
-use nalgebra::{Point3, Unit, Vector2, Vector3};
+use nalgebra::{Point3, Unit};
 
 use ray::Ray;
 use scene::Scene;
@@ -68,15 +68,16 @@ fn pathtrace_sample(scene: &Scene) -> Vec<[f64; 3]> {
 
 fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> [f64; 3] {
     let camera_position = Point3::from(scene.config.camera.position);
-
-    let pixel_on_screen = Vector2::new(
-        x as f64 / scene.config.width as f64,
-        y as f64 / scene.config.height as f64,
+    let ratio = std::cmp::min(scene.config.width, scene.config.height) as f64;
+    let pixel_on_screen = Point3::new(
+        x as f64 / ratio * 2.0 - scene.config.width as f64 / ratio,
+        y as f64 / ratio * 2.0 - scene.config.height as f64 / ratio,
+        -1.0,
     );
 
     let ray = Ray {
         position: camera_position,
-        direction: Unit::new_normalize(Vector3::new(pixel_on_screen[0], pixel_on_screen[1], -1.0)),
+        direction: Unit::new_normalize(pixel_on_screen.coords),
     };
 
     radiance(scene, &ray)
