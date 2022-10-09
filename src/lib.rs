@@ -87,7 +87,7 @@ fn radiance(scene: &Scene, ray: &Ray) -> [f64; 3] {
         .objects
         .iter()
         .filter_map(|o| Some((o, o.shape.intersect(ray)?)))
-        .min_by(|a, b| a.1.distance.partial_cmp(&b.1.distance).unwrap());
+        .min_by(|(_, a), (_, b)| a.distance.partial_cmp(&b.distance).unwrap());
 
     if closest_match.is_none() {
         return scene.config.background_color;

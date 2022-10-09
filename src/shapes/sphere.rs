@@ -12,7 +12,7 @@ pub struct Sphere {
 impl Sphere {
     pub fn new(position: Point3<f64>, radius: f64) -> Sphere {
         Sphere {
-            position: position,
+            position,
             radius_sq: radius * radius,
         }
     }
@@ -24,7 +24,7 @@ impl Shape for Sphere {
 
         let ray_to_pos = self.position - ray.position;
         let ray_to_a_norm = ray.direction.dot(&ray_to_pos);
-        if ray_to_a_norm < 0.0 {
+        if ray_to_a_norm <= 0.0 {
             // facing the wrong direction
             return None;
         }

@@ -12,7 +12,7 @@ pub struct Plane {
 impl Plane {
     pub fn new(position: Point3<f64>, rotation: &Rotation3<f64>) -> Plane {
         Plane {
-            position: position,
+            position,
             up: rotation * Vector3::y_axis(),
         }
     }
