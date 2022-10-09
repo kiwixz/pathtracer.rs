@@ -9,7 +9,7 @@ use std::{
     sync::{mpsc, Arc},
 };
 
-use nalgebra::{Point3, Unit};
+use nalgebra::{Point3, Rotation3, Scale3, Unit};
 
 use ray::Ray;
 use scene::Scene;
@@ -68,16 +68,25 @@ fn pathtrace_sample(scene: &Scene) -> Vec<[f64; 3]> {
 
 fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> [f64; 3] {
     let camera_position = Point3::from(scene.config.camera.position);
-    let ratio = std::cmp::min(scene.config.width, scene.config.height) as f64;
+    let rotation = Rotation3::from_euler_angles(
+        scene.config.camera.rotation[1].to_radians(),
+        -scene.config.camera.rotation[0].to_radians(),
+        -scene.config.camera.rotation[2].to_radians(),
+    );
+    let scale = Scale3::from(scene.config.camera.scale);
+
+    let ratio = 2.0 * (scene.config.camera.field_of_view.to_radians() / 2.0).tan()
+        / std::cmp::min(scene.config.width, scene.config.height) as f64;
+
     let pixel_on_screen = Point3::new(
-        x as f64 / ratio * 2.0 - scene.config.width as f64 / ratio,
-        (scene.config.height - y) as f64 / ratio * 2.0 - scene.config.height as f64 / ratio,
+        x as f64 * ratio - scene.config.width as f64 * ratio / 2.0,
+        (scene.config.height - 1 - y) as f64 * ratio - scene.config.height as f64 * ratio / 2.0,
         -1.0,
     );
 
     let ray = Ray {
         position: camera_position,
-        direction: Unit::new_normalize(pixel_on_screen.coords),
+        direction: rotation * Unit::new_normalize(scale * pixel_on_screen.coords),
     };
 
     radiance(scene, &ray)
