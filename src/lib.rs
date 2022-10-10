@@ -83,9 +83,6 @@ fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
 }
 
 fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
-    thread_local! { static RNG: RefCell<Xoshiro256Plus> = RefCell::new(Xoshiro256Plus::from_entropy()); }
-    let rand = || RNG.with(|a| a.borrow_mut().gen::<f64>());
-
     if bounce > scene.min_bounces {
         if bounce > scene.max_bounces {
             return scene.background_color;
@@ -109,4 +106,10 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     let (object, intersection) = closest_match.unwrap();
 
     object.emission + object.diffusion
+}
+
+fn rand() -> f64 {
+    thread_local! { static RNG: RefCell<Xoshiro256Plus> = RefCell::new(Xoshiro256Plus::from_entropy()); }
+
+    RNG.with(|a| a.borrow_mut().gen())
 }

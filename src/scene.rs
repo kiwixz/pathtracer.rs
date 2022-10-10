@@ -31,11 +31,7 @@ impl Scene {
                 plane.object.clone(),
                 Box::new(Plane::new(
                     plane.position.into(),
-                    &Rotation3::from_euler_angles(
-                        plane.rotation[0].to_radians(),
-                        plane.rotation[1].to_radians(),
-                        plane.rotation[2].to_radians(),
-                    ),
+                    &make_rotation(&plane.rotation),
                 )),
             ))
         }
@@ -59,11 +55,7 @@ impl Scene {
 
             camera: Camera {
                 position: config.camera.position.into(),
-                rotation: Rotation3::from_euler_angles(
-                    config.camera.rotation[1].to_radians(),
-                    -config.camera.rotation[0].to_radians(),
-                    -config.camera.rotation[2].to_radians(),
-                ),
+                rotation: make_rotation(&config.camera.rotation),
                 scale: Scale3::new(
                     config.camera.scale[0] * screen_ratio,
                     config.camera.scale[1] * screen_ratio,
@@ -100,4 +92,12 @@ impl Object {
             emission: config.emission.into(),
         }
     }
+}
+
+fn make_rotation(angles: &[f64; 3]) -> Rotation3<f64> {
+    Rotation3::from_euler_angles(
+        angles[1].to_radians(),
+        -angles[0].to_radians(),
+        -angles[2].to_radians(),
+    )
 }
