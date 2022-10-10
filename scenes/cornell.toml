@@ -72,7 +72,7 @@ emission = [12, 12, 12]
 [[spheres]]  # mirror
 position = [-4.5, 3.5, -8.0]
 radius = 3.25
-diffusion = [1, 1, 1]
+diffusion = [0, 0, 0]
 specular = [1, 1, 1]
 refraction = [0, 0, 0]
 emission = [0, 0, 0]
@@ -80,7 +80,7 @@ emission = [0, 0, 0]
 [[spheres]]  # glass
 position = [4.5, 3.5, -1.0]
 radius = 3.25
-diffusion = [1, 1, 1]
+diffusion = [0, 0, 0]
 specular = [0, 0, 0]
 refraction = [1, 1, 1]
 emission = [0, 0, 0]

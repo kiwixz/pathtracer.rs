@@ -9,10 +9,10 @@ use std::{
     sync::{mpsc, Arc},
 };
 
-use nalgebra::{Point3, Rotation3, Scale3, Unit};
+use nalgebra::{Point3, Unit};
 
 use ray::Ray;
-use scene::Scene;
+use scene::{Color, Scene};
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     let scene: Arc<Scene> = Arc::new(Scene::open("scenes/cornell.toml")?);
@@ -21,7 +21,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let (sender, receiver) = mpsc::sync_channel(workers.get() * 2);
 
     let pool = thread_pool::Static::build(workers)?;
-    for _ in 0..scene.config.samples {
+    for _ in 0..scene.samples {
         let sender = sender.clone();
         let scene = scene.clone();
         pool.submit(move || sender.send(pathtrace_sample(&scene)).unwrap());
@@ -29,30 +29,27 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     drop(sender);
 
-    let mut image = vec![[0.0, 0.0, 0.0]; (scene.config.width * scene.config.height) as usize];
+    let mut image = vec![Color::zeros(); (scene.width * scene.height) as usize];
     while let Ok(sample) = receiver.recv() {
         for (image_pixel, sample_pixel) in image.iter_mut().zip(sample) {
-            for (image_color, sample_color) in image_pixel.iter_mut().zip(sample_pixel) {
-                *image_color += sample_color;
-            }
+            *image_pixel += sample_pixel;
         }
     }
     for pixel in image.iter_mut() {
         for color in pixel.iter_mut() {
-            *color /= scene.config.samples as f64;
+            *color /= scene.samples as f64;
         }
     }
 
     let file = std::fs::File::create("output.png")?;
-    let mut encoder =
-        png::Encoder::new(file, scene.config.width as u32, scene.config.height as u32);
+    let mut encoder = png::Encoder::new(file, scene.width as u32, scene.height as u32);
     encoder.set_color(png::ColorType::Rgb);
     let mut writer = encoder.write_header()?;
     writer.write_image_data(
         &image
             .iter()
             .flatten()
-            .map(|color| (color * 255.0) as u8)
+            .map(|color| (color * u8::MAX as f64) as u8)
             .collect::<Vec<u8>>(),
     )?;
     writer.finish()?;
@@ -60,39 +57,29 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn pathtrace_sample(scene: &Scene) -> Vec<[f64; 3]> {
-    (0..scene.config.height)
-        .flat_map(|y| (0..scene.config.width).map(move |x| pathtrace_pixel(scene, x, y)))
+fn pathtrace_sample(scene: &Scene) -> Vec<Color> {
+    (0..scene.height)
+        .flat_map(|y| (0..scene.width).map(move |x| pathtrace_pixel(scene, x, y)))
         .collect()
 }
 
-fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> [f64; 3] {
-    let camera_position = Point3::from(scene.config.camera.position);
-    let rotation = Rotation3::from_euler_angles(
-        scene.config.camera.rotation[1].to_radians(),
-        -scene.config.camera.rotation[0].to_radians(),
-        -scene.config.camera.rotation[2].to_radians(),
-    );
-    let scale = Scale3::from(scene.config.camera.scale);
-
-    let ratio = 2.0 * (scene.config.camera.field_of_view.to_radians() / 2.0).tan()
-        / std::cmp::min(scene.config.width, scene.config.height) as f64;
-
+fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
     let pixel_on_screen = Point3::new(
-        x as f64 * ratio - scene.config.width as f64 * ratio / 2.0,
-        (scene.config.height - 1 - y) as f64 * ratio - scene.config.height as f64 * ratio / 2.0,
+        x as f64 - scene.width as f64 / 2.0,
+        (scene.height - 1 - y) as f64 - scene.height as f64 / 2.0,
         -1.0,
     );
 
     let ray = Ray {
-        position: camera_position,
-        direction: rotation * Unit::new_normalize(scale * pixel_on_screen.coords),
+        position: scene.camera.position,
+        direction: scene.camera.rotation
+            * Unit::new_normalize(scene.camera.scale * pixel_on_screen.coords),
     };
 
     radiance(scene, &ray)
 }
 
-fn radiance(scene: &Scene, ray: &Ray) -> [f64; 3] {
+fn radiance(scene: &Scene, ray: &Ray) -> Color {
     let closest_match = scene
         .objects
         .iter()
@@ -100,7 +87,7 @@ fn radiance(scene: &Scene, ray: &Ray) -> [f64; 3] {
         .min_by(|(_, a), (_, b)| a.distance.partial_cmp(&b.distance).unwrap());
 
     if closest_match.is_none() {
-        return scene.config.background_color;
+        return scene.background_color;
     }
     let (object, intersection) = closest_match.unwrap();
 
