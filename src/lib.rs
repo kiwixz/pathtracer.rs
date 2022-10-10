@@ -105,7 +105,34 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     }
     let (object, intersection) = closest_match.unwrap();
 
-    object.emission + object.diffusion
+    let mut color = object.emission;
+
+    if object.specular != Color::zeros() {
+        color += radiance(
+            scene,
+            &Ray {
+                position: intersection.point,
+                direction: Unit::new_normalize(
+                    ray.direction.into_inner()
+                        - intersection
+                            .normal
+                            .scale(intersection.normal.dot(&ray.direction) * 2.0),
+                ),
+            },
+            bounce + 1,
+        )
+        .component_mul(&object.specular);
+    }
+
+    if object.diffusion != Color::zeros() {
+        color += object.diffusion
+    }
+
+    if object.refraction != Color::zeros() {
+        color.fill(0.0);
+    }
+
+    color
 }
 
 fn rand() -> f64 {
