@@ -4,12 +4,15 @@ mod shapes;
 mod thread_pool;
 
 use std::{
+    cell::RefCell,
     error::Error,
     num::NonZeroUsize,
     sync::{mpsc, Arc},
 };
 
 use nalgebra::{Point3, Unit};
+use rand::{Rng, SeedableRng};
+use rand_xoshiro::Xoshiro256Plus;
 
 use ray::Ray;
 use scene::{Color, Scene};
@@ -76,20 +79,34 @@ fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
             * Unit::new_normalize(scene.camera.scale * pixel_on_screen.coords),
     };
 
-    radiance(scene, &ray)
+    radiance(scene, &ray, 0)
 }
 
-fn radiance(scene: &Scene, ray: &Ray) -> Color {
+fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
+    thread_local! { static RNG: RefCell<Xoshiro256Plus> = RefCell::new(Xoshiro256Plus::from_entropy()); }
+    let rand = || RNG.with(|a| a.borrow_mut().gen::<f64>());
+
+    if bounce > scene.min_bounces {
+        if bounce > scene.max_bounces {
+            return scene.background_color;
+        }
+
+        let survive_probability =
+            (scene.max_bounces - bounce) as f64 / (scene.max_bounces - scene.min_bounces) as f64;
+        if rand() > survive_probability {
+            return scene.background_color;
+        }
+    }
+
     let closest_match = scene
         .objects
         .iter()
         .filter_map(|o| Some((o, o.shape.intersect(ray)?)))
         .min_by(|(_, a), (_, b)| a.distance.partial_cmp(&b.distance).unwrap());
-
     if closest_match.is_none() {
         return scene.background_color;
     }
     let (object, intersection) = closest_match.unwrap();
 
-    object.diffusion
+    object.emission + object.diffusion
 }
