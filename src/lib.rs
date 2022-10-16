@@ -92,32 +92,30 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     }
     let (obj, inter) = closest_match.unwrap();
 
-    if obj.color == Color::zeros() {
+    if obj.color == Color::zeros()
+        || bounce >= scene.min_bounces
+            && (bounce >= scene.max_bounces
+                || !math::rand_bool(
+                    (scene.max_bounces - bounce) as f64
+                        / (scene.max_bounces - scene.min_bounces + 1) as f64
+                        * obj.color.mean(),
+                ))
+    {
         return obj.emission;
-    }
-
-    if bounce >= scene.min_bounces {
-        if bounce >= scene.max_bounces
-            || !math::rand_bool(
-                (scene.max_bounces - bounce) as f64
-                    / (scene.max_bounces - scene.min_bounces) as f64,
-            )
-        {
-            return obj.emission;
-        }
     }
 
     let direction = bounce_direction(ray, obj, &inter);
 
-    radiance(
-        scene,
-        &Ray {
-            position: inter.point + direction.scale(scene.epsilon),
-            direction,
-        },
-        bounce + 1,
-    )
-    .component_mul(&obj.color)
+    obj.emission
+        + radiance(
+            scene,
+            &Ray {
+                position: inter.point + direction.scale(scene.epsilon),
+                direction,
+            },
+            bounce + 1,
+        )
+        .component_mul(&obj.color)
 }
 
 fn bounce_direction(ray: &Ray, object: &Object, intersection: &Intersection) -> UnitVector3<f64> {

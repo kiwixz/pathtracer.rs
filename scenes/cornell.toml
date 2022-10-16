@@ -1,8 +1,8 @@
 width = 640
 height = 480
 samples = 200
-min_bounces = 3
-max_bounces = 3
+min_bounces = 4
+max_bounces = 8
 background_color = [0, 0, 0]
 epsilon = 1e-13
 
