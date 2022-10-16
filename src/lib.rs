@@ -10,10 +10,11 @@ use std::{
     sync::{mpsc, Arc},
 };
 
-use nalgebra::{Point3, Rotation3, Unit, Vector3};
+use nalgebra::{Point3, Rotation3, Unit, UnitVector3, Vector3};
 
 use ray::Ray;
-use scene::{Color, Scene};
+use scene::{Color, Object, Scene};
+use shapes::Intersection;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     let scene: Arc<Scene> = Arc::new(Scene::open("scenes/cornell.toml")?);
@@ -107,12 +108,7 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
         }
     }
 
-    let diffuse_direction =
-        Rotation3::rotation_between(&Vector3::z_axis(), &inter.normal).unwrap_or(
-            Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
-        ) * math::rand_direction_z();
-    let specular_direction = math::reflect_unit(&ray.direction, &inter.normal);
-    let direction = diffuse_direction.slerp(&specular_direction, obj.specular);
+    let direction = bounce_direction(ray, obj, &inter);
 
     radiance(
         scene,
@@ -123,4 +119,22 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
         bounce + 1,
     )
     .component_mul(&obj.color)
+}
+
+fn bounce_direction(ray: &Ray, object: &Object, intersection: &Intersection) -> UnitVector3<f64> {
+    let diffuse_direction = || {
+        Rotation3::rotation_between(&Vector3::z_axis(), &intersection.normal).unwrap_or(
+            Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
+        ) * math::rand_direction_z()
+    };
+
+    let specular_direction = || math::reflect_unit(&ray.direction, &intersection.normal);
+
+    if object.specular == 0.0 {
+        return diffuse_direction();
+    } else if object.specular == 1.0 {
+        return specular_direction();
+    } else {
+        return diffuse_direction().slerp(&specular_direction(), object.specular);
+    }
 }
