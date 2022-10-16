@@ -1,18 +1,16 @@
+mod math;
 mod ray;
 mod scene;
 mod shapes;
 mod thread_pool;
 
 use std::{
-    cell::RefCell,
     error::Error,
     num::NonZeroUsize,
     sync::{mpsc, Arc},
 };
 
-use nalgebra::{Point3, Unit};
-use rand::{Rng, SeedableRng};
-use rand_xoshiro::Xoshiro256Plus;
+use nalgebra::{Point3, Rotation3, Unit, Vector3};
 
 use ray::Ray;
 use scene::{Color, Scene};
@@ -83,18 +81,6 @@ fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
 }
 
 fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
-    if bounce > scene.min_bounces {
-        if bounce > scene.max_bounces {
-            return scene.background_color;
-        }
-
-        let survive_probability =
-            (scene.max_bounces - bounce) as f64 / (scene.max_bounces - scene.min_bounces) as f64;
-        if rand() > survive_probability {
-            return scene.background_color;
-        }
-    }
-
     let closest_match = scene
         .objects
         .iter()
@@ -103,40 +89,38 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     if closest_match.is_none() {
         return scene.background_color;
     }
-    let (object, intersection) = closest_match.unwrap();
+    let (obj, inter) = closest_match.unwrap();
 
-    let mut color = object.emission;
-
-    if object.specular != Color::zeros() {
-        color += radiance(
-            scene,
-            &Ray {
-                position: intersection.point,
-                direction: Unit::new_normalize(
-                    ray.direction.into_inner()
-                        - intersection
-                            .normal
-                            .scale(intersection.normal.dot(&ray.direction) * 2.0),
-                ),
-            },
-            bounce + 1,
-        )
-        .component_mul(&object.specular);
+    if obj.color == Color::zeros() {
+        return obj.emission;
     }
 
-    if object.diffusion != Color::zeros() {
-        color += object.diffusion
+    if bounce >= scene.min_bounces {
+        if bounce >= scene.max_bounces {
+            return obj.emission;
+        }
+
+        let survive_probability =
+            (scene.max_bounces - bounce) as f64 / (scene.max_bounces - scene.min_bounces) as f64;
+        if math::rand() > survive_probability {
+            return obj.emission;
+        }
     }
 
-    if object.refraction != Color::zeros() {
-        color.fill(0.0);
-    }
+    let diffuse_direction =
+        Rotation3::rotation_between(&Vector3::z_axis(), &inter.normal).unwrap_or(
+            Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
+        ) * math::rand_direction_z();
+    let specular_direction = math::reflect_unit(&ray.direction, &inter.normal);
+    let direction = diffuse_direction.slerp(&specular_direction, obj.specular);
 
-    color
-}
-
-fn rand() -> f64 {
-    thread_local! { static RNG: RefCell<Xoshiro256Plus> = RefCell::new(Xoshiro256Plus::from_entropy()); }
-
-    RNG.with(|a| a.borrow_mut().gen())
+    radiance(
+        scene,
+        &Ray {
+            position: inter.point + direction.scale(scene.epsilon),
+            direction,
+        },
+        bounce + 1,
+    )
+    .component_mul(&obj.color)
 }

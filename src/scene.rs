@@ -15,6 +15,7 @@ pub struct Scene {
     pub min_bounces: i32,
     pub max_bounces: i32,
     pub background_color: Color,
+    pub epsilon: f64,
 
     pub camera: Camera,
     pub objects: Vec<Object>,
@@ -52,6 +53,7 @@ impl Scene {
             min_bounces: config.min_bounces,
             max_bounces: config.max_bounces,
             background_color: config.background_color.into(),
+            epsilon: config.epsilon,
 
             camera: Camera {
                 position: config.camera.position.into(),
@@ -76,20 +78,20 @@ pub struct Camera {
 
 pub struct Object {
     pub shape: Box<dyn Shape>,
-    pub diffusion: Color,
-    pub specular: Color,
-    pub refraction: Color,
     pub emission: Color,
+    pub color: Color,
+    pub specular: f64,
+    pub refraction: f64,
 }
 
 impl Object {
     fn new(config: config::Object, shape: Box<dyn Shape>) -> Object {
         Object {
             shape,
-            diffusion: config.diffusion.into(),
-            specular: config.specular.into(),
-            refraction: config.refraction.into(),
             emission: config.emission.into(),
+            color: config.color.into(),
+            specular: config.specular,
+            refraction: config.refraction,
         }
     }
 }

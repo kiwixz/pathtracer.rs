@@ -6,6 +6,7 @@ pub struct Scene {
     pub min_bounces: i32,
     pub max_bounces: i32,
     pub background_color: [f64; 3],
+    pub epsilon: f64,
 
     pub camera: Camera,
 
@@ -23,10 +24,17 @@ pub struct Camera {
 
 #[derive(Clone, serde::Deserialize)]
 pub struct Object {
-    pub diffusion: [f64; 3],
-    pub specular: [f64; 3],
-    pub refraction: [f64; 3],
+    #[serde(default)]
     pub emission: [f64; 3],
+
+    #[serde(default)]
+    pub color: [f64; 3],
+
+    #[serde(default)]
+    pub specular: f64,
+
+    #[serde(default)]
+    pub refraction: f64,
 }
 
 #[derive(serde::Deserialize)]

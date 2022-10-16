@@ -1,9 +1,10 @@
 width = 640
 height = 480
-samples = 1
-min_bounces = 6
-max_bounces = 12
+samples = 200
+min_bounces = 3
+max_bounces = 3
 background_color = [0, 0, 0]
+epsilon = 1e-13
 
 [camera]
 position = [0, 10, 40]
@@ -15,72 +16,47 @@ field_of_view = 30
 [[planes]]  # left
 position = [-10, 0, 0]
 rotation = [0, 0, 90]
-diffusion = [0.75, 0.25, 0.25]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0.75, 0.25, 0.25]
 
 [[planes]]  # top
 position = [0.0, 16.18, 0.0]
 rotation = [0, 0, 0]
-diffusion = [0.75, 0.75, 0.75]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
 
 [[planes]]  # right
 position = [10, 0, 0]
 rotation = [0, 0, 90]
-diffusion = [0.25, 0.25, 0.75]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0.25, 0.25, 0.75]
 
 [[planes]]  # bottom
 position = [0, 0, 0]
 rotation = [0, 0, 0]
-diffusion = [0.75, 0.75, 0.75]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
 
 [[planes]]  # back
 position = [0, 0, -18]
 rotation = [0, 90, 0]
-diffusion = [0.75, 0.75, 0.75]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0.75, 0.75, 0.75]
 
 [[planes]]  # front
 position = [0, 0, 41]
 rotation = [0, 90, 0]
-diffusion = [0, 0, 0]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [0, 0, 0]
 
 
 [[spheres]]  # light
 position = [0.0, 116.1, 0.0]
 radius = 100
-diffusion = [0, 0, 0]
-specular = [0, 0, 0]
-refraction = [0, 0, 0]
 emission = [12, 12, 12]
 
 [[spheres]]  # mirror
 position = [-4.5, 3.5, -8.0]
 radius = 3.25
-diffusion = [0, 0, 0]
-specular = [1, 1, 1]
-refraction = [0, 0, 0]
-emission = [0, 0, 0]
+color = [1, 1, 1]
+specular = 1
 
 [[spheres]]  # glass
 position = [4.5, 3.5, -1.0]
 radius = 3.25
-diffusion = [0, 0, 0]
-specular = [0, 0, 0]
-refraction = [1, 1, 1]
-emission = [0, 0, 0]
+color = [1, 1, 1]
+refraction = 1

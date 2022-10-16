@@ -1,4 +1,4 @@
-use nalgebra::{Point3, Rotation3, UnitVector3, Vector3};
+use nalgebra::{Point3, Rotation3, Unit, UnitVector3, Vector3};
 
 use crate::ray::Ray;
 
@@ -20,14 +20,14 @@ impl Plane {
 
 impl Shape for Plane {
     fn intersect(&self, ray: &Ray) -> Option<Intersection> {
-        let den = ray.direction.dot(&self.up);
-        if den == 0.0 {
+        let denominator = ray.direction.dot(&self.up);
+        if denominator == 0.0 {
             // ray is parallel to plane
             return None;
         }
 
         let ray_to_pos = self.position - ray.position;
-        let distance = ray_to_pos.dot(&self.up) / den;
+        let distance = ray_to_pos.dot(&self.up) / denominator;
         if distance <= 0.0 {
             // plane is behind
             return None;
@@ -36,7 +36,11 @@ impl Shape for Plane {
         return Some(Intersection {
             distance,
             point: ray.position + ray.direction.scale(distance),
-            normal: self.up,
+            normal: if denominator < 0.0 {
+                self.up
+            } else {
+                Unit::new_unchecked(self.up.scale(-1.0))
+            },
         });
     }
 }
