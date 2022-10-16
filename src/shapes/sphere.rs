@@ -24,30 +24,37 @@ impl Shape for Sphere {
 
         let ray_to_pos = self.position - ray.position;
         let ray_to_a_norm = ray.direction.dot(&ray_to_pos);
-        if ray_to_a_norm <= 0.0 {
-            // facing the wrong direction
-            return None;
-        }
-
         let pos_to_a_norm_sq = ray_to_pos.norm_squared() - ray_to_a_norm * ray_to_a_norm;
-        if pos_to_a_norm_sq > self.radius_sq {
+        let intersection_to_a_norm_sq = self.radius_sq - pos_to_a_norm_sq;
+        if intersection_to_a_norm_sq < 0.0 {
             // no intersection
             return None;
         }
 
-        let intersection_to_a_norm = (self.radius_sq - pos_to_a_norm_sq).sqrt();
+        let intersection_to_a_norm = intersection_to_a_norm_sq.sqrt();
 
         let mut distance = ray_to_a_norm - intersection_to_a_norm;
+        let mut from_inside = false;
         if distance <= 0.0 {
             // this intersection is behind, return the other one
+
             distance = ray_to_a_norm + intersection_to_a_norm;
+            if distance <= 0.0 {
+                return None;
+            }
+            from_inside = true;
         }
 
         let point = ray.position + ray.direction.scale(distance);
         return Some(Intersection {
             distance,
             point,
-            normal: Unit::new_normalize(point - self.position),
+            normal: Unit::new_normalize(if from_inside {
+                self.position - point
+            } else {
+                point - self.position
+            }),
+            from_inside,
         });
     }
 }

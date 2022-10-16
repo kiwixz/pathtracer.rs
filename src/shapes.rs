@@ -13,4 +13,5 @@ pub struct Intersection {
     pub distance: f64,
     pub point: Point3<f64>,
     pub normal: UnitVector3<f64>,
+    pub from_inside: bool,
 }

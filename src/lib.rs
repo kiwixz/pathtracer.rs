@@ -97,13 +97,12 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     }
 
     if bounce >= scene.min_bounces {
-        if bounce >= scene.max_bounces {
-            return obj.emission;
-        }
-
-        let survive_probability =
-            (scene.max_bounces - bounce) as f64 / (scene.max_bounces - scene.min_bounces) as f64;
-        if math::rand() > survive_probability {
+        if bounce >= scene.max_bounces
+            || !math::rand_bool(
+                (scene.max_bounces - bounce) as f64
+                    / (scene.max_bounces - scene.min_bounces) as f64,
+            )
+        {
             return obj.emission;
         }
     }
@@ -122,19 +121,42 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
 }
 
 fn bounce_direction(ray: &Ray, object: &Object, intersection: &Intersection) -> UnitVector3<f64> {
-    let diffuse_direction = || {
-        Rotation3::rotation_between(&Vector3::z_axis(), &intersection.normal).unwrap_or(
-            Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
-        ) * math::rand_direction_z()
-    };
+    let reflection = || math::reflect(&ray.direction, &intersection.normal);
 
-    let specular_direction = || math::reflect_unit(&ray.direction, &intersection.normal);
+    if !math::rand_bool(object.refraction) {
+        if object.specular == 1.0 {
+            return reflection();
+        }
 
-    if object.specular == 0.0 {
-        return diffuse_direction();
-    } else if object.specular == 1.0 {
-        return specular_direction();
-    } else {
-        return diffuse_direction().slerp(&specular_direction(), object.specular);
+        let diffuse =
+            Rotation3::rotation_between(&Vector3::z_axis(), &intersection.normal).unwrap_or(
+                Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
+            ) * math::rand_direction_z();
+
+        if object.specular == 0.0 {
+            return diffuse;
+        }
+
+        return diffuse.slerp(&reflection(), object.specular);
     }
+
+    let incident_eta = if intersection.from_inside { 1.5 } else { 1.0 };
+    let refraction_eta = if intersection.from_inside { 1.0 } else { 1.5 };
+
+    if math::rand_bool(math::reflectance(
+        &ray.direction,
+        &intersection.normal,
+        incident_eta,
+        refraction_eta,
+    )) {
+        return reflection();
+    }
+
+    math::refract(
+        &ray.direction,
+        &intersection.normal,
+        incident_eta,
+        refraction_eta,
+    )
+    .unwrap_or_else(reflection)
 }

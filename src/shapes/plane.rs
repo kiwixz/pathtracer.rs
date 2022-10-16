@@ -41,6 +41,7 @@ impl Shape for Plane {
             } else {
                 Unit::new_unchecked(self.up.scale(-1.0))
             },
+            from_inside: false,
         });
     }
 }
