@@ -15,8 +15,7 @@ pub struct Scene {
     pub iterations: i32,
     pub supersampling: i32,
     pub samples: i32,
-    pub min_bounces: i32,
-    pub max_bounces: i32,
+    pub bounces: i32,
 
     pub background_color: Color,
     pub epsilon: f64,
@@ -57,8 +56,7 @@ impl Scene {
             iterations: config.iterations,
             supersampling: config.supersampling,
             samples: config.samples,
-            min_bounces: config.min_bounces,
-            max_bounces: config.max_bounces,
+            bounces: config.bounces,
 
             background_color: config.background_color.into(),
             epsilon: config.epsilon,
