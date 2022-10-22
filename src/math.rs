@@ -78,6 +78,10 @@ pub fn reflectance(
 ) -> f64 {
     // fresnel schlick approximation
     let incident_angle_cos = -normal.dot(incident);
+    if incident_angle_cos <= 0.0 {
+        return 1.0;
+    }
+
     let normal_reflectance_sqrt = (incident_eta - refraction_eta) / (incident_eta + refraction_eta);
     let normal_reflectance = normal_reflectance_sqrt * normal_reflectance_sqrt;
 
