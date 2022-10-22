@@ -1,6 +1,8 @@
 width = 640
 height = 480
-samples = 200
+iterations = 6
+supersampling = 2
+samples = 20
 min_bounces = 4
 max_bounces = 8
 background_color = [0, 0, 0]

@@ -20,65 +20,85 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let scene: Arc<Scene> = Arc::new(Scene::open("scenes/cornell.toml")?);
 
     let workers = std::thread::available_parallelism().unwrap_or(NonZeroUsize::new(1).unwrap());
-    let (sender, receiver) = mpsc::sync_channel(workers.get() * 2);
+    let (senders, receivers): (Vec<_>, Vec<_>) = (0..scene.iterations)
+        .map(|_| mpsc::sync_channel(workers.get() * 2))
+        .unzip();
 
-    let pool = thread_pool::Static::build(workers)?;
-    for _ in 0..scene.samples {
-        let sender = sender.clone();
-        let scene = scene.clone();
-        pool.submit(move || sender.send(pathtrace_sample(&scene)).unwrap());
+    let pool = thread_pool::StaticPool::new(workers);
+    for sender in senders {
+        for y in 0..scene.height {
+            let sender = sender.clone();
+            let scene = scene.clone();
+            pool.submit(move || sender.send((y, pathtrace_row(&scene, y))).unwrap());
+        }
     }
-
-    drop(sender);
 
     let mut image = vec![Color::zeros(); (scene.width * scene.height) as usize];
-    while let Ok(sample) = receiver.recv() {
-        for (image_pixel, sample_pixel) in image.iter_mut().zip(sample) {
-            *image_pixel += sample_pixel;
+    for (iteration, receiver) in receivers.iter().enumerate() {
+        while let Ok((y, row)) = receiver.recv() {
+            for (image_pixel, row_pixel) in
+                image.iter_mut().skip((y * scene.width) as usize).zip(row)
+            {
+                *image_pixel += row_pixel;
+            }
         }
-    }
-    for pixel in image.iter_mut() {
-        for color in pixel.iter_mut() {
-            *color /= scene.samples as f64;
-        }
-    }
 
-    let file = std::fs::File::create("output.png")?;
-    let mut encoder = png::Encoder::new(file, scene.width as u32, scene.height as u32);
-    encoder.set_color(png::ColorType::Rgb);
-    let mut writer = encoder.write_header()?;
-    writer.write_image_data(
-        &image
-            .iter()
-            .flatten()
-            .map(|color| (color * u8::MAX as f64) as u8)
-            .collect::<Vec<u8>>(),
-    )?;
-    writer.finish()?;
+        let file = std::fs::File::create("output.png")?;
+        let mut encoder = png::Encoder::new(file, scene.width as u32, scene.height as u32);
+        encoder.set_color(png::ColorType::Rgb);
+        let mut writer = encoder.write_header()?;
+        writer.write_image_data(
+            &image
+                .iter()
+                .flatten()
+                .map(|color| (color / (iteration + 1) as f64 * u8::MAX as f64) as u8)
+                .collect::<Vec<u8>>(),
+        )?;
+        writer.finish()?;
+    }
 
     Ok(())
 }
 
-fn pathtrace_sample(scene: &Scene) -> Vec<Color> {
-    (0..scene.height)
-        .flat_map(|y| (0..scene.width).map(move |x| pathtrace_pixel(scene, x, y)))
+fn pathtrace_row(scene: &Scene, y: i32) -> Vec<Color> {
+    (0..scene.width)
+        .map(|x| pathtrace_pixel(scene, x, y))
         .collect()
 }
 
 fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
-    let pixel_on_screen = Point3::new(
-        x as f64 - scene.width as f64 / 2.0,
-        (scene.height - 1 - y) as f64 - scene.height as f64 / 2.0,
+    (0..scene.supersampling)
+        .flat_map(|super_y| {
+            (0..scene.supersampling).map(move |super_x| {
+                pathtrace_subpixel(
+                    scene,
+                    x as f64
+                        + super_x as f64 / scene.supersampling as f64
+                        + 0.5 / scene.supersampling as f64,
+                    y as f64
+                        + super_y as f64 / scene.supersampling as f64
+                        + 0.5 / scene.supersampling as f64,
+                )
+            })
+        })
+        .sum::<Color>()
+        / (scene.supersampling * scene.supersampling) as f64
+}
+
+fn pathtrace_subpixel(scene: &Scene, x: f64, y: f64) -> Color {
+    let screen_subpixel = Point3::new(
+        x - scene.width as f64 / 2.0,
+        scene.height as f64 / 2.0 - y,
         -1.0,
     );
-
     let ray = Ray {
         position: scene.camera.position,
         direction: scene.camera.rotation
-            * Unit::new_normalize(scene.camera.scale * pixel_on_screen.coords),
+            * Unit::new_normalize(scene.camera.scale * screen_subpixel.coords),
     };
 
-    radiance(scene, &ray, 0)
+    let color_sum: Color = (0..scene.samples).map(|_| radiance(scene, &ray, 0)).sum();
+    (color_sum / scene.samples as f64).map(|a| a.clamp(0.0, 1.0))
 }
 
 fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
@@ -92,14 +112,17 @@ fn radiance(scene: &Scene, ray: &Ray, bounce: i32) -> Color {
     }
     let (obj, inter) = closest_match.unwrap();
 
-    if obj.color == Color::zeros()
-        || bounce >= scene.min_bounces
-            && (bounce >= scene.max_bounces
-                || !math::rand_bool(
-                    (scene.max_bounces - bounce) as f64
-                        / (scene.max_bounces - scene.min_bounces + 1) as f64
-                        * obj.color.mean(),
-                ))
+    if obj.color == Color::zeros() {
+        return obj.emission;
+    }
+
+    if bounce >= scene.min_bounces
+        && (bounce >= scene.max_bounces
+            || !math::rand_bool(
+                (scene.max_bounces - bounce) as f64
+                    / (scene.max_bounces - scene.min_bounces + 1) as f64
+                    * obj.color.mean(),
+            ))
     {
         return obj.emission;
     }

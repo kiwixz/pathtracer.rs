@@ -2,9 +2,13 @@
 pub struct Scene {
     pub width: i32,
     pub height: i32,
+
+    pub iterations: i32,
+    pub supersampling: i32,
     pub samples: i32,
     pub min_bounces: i32,
     pub max_bounces: i32,
+
     pub background_color: [f64; 3],
     pub epsilon: f64,
 

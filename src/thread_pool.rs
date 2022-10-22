@@ -3,13 +3,13 @@ use std::{
     sync::{mpsc, Arc, Mutex},
 };
 
-pub struct Static {
+pub struct StaticPool {
     workers: Vec<Worker>,
     sender: Option<mpsc::Sender<Task>>,
 }
 
-impl Static {
-    pub fn build(size: NonZeroUsize) -> Result<Static, String> {
+impl StaticPool {
+    pub fn new(size: NonZeroUsize) -> StaticPool {
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
 
@@ -18,10 +18,10 @@ impl Static {
             workers.push(Worker::new(receiver.clone()));
         }
 
-        Ok(Static {
+        StaticPool {
             workers,
             sender: Some(sender),
-        })
+        }
     }
 
     pub fn submit<T>(&self, task: T)
@@ -32,7 +32,7 @@ impl Static {
     }
 }
 
-impl Drop for Static {
+impl Drop for StaticPool {
     fn drop(&mut self) {
         drop(self.sender.take());
         self.workers.clear();

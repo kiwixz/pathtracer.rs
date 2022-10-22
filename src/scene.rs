@@ -11,9 +11,13 @@ pub type Color = Vector3<f64>;
 pub struct Scene {
     pub width: i32,
     pub height: i32,
+
+    pub iterations: i32,
+    pub supersampling: i32,
     pub samples: i32,
     pub min_bounces: i32,
     pub max_bounces: i32,
+
     pub background_color: Color,
     pub epsilon: f64,
 
@@ -49,9 +53,13 @@ impl Scene {
         Ok(Scene {
             width: config.width,
             height: config.height,
+
+            iterations: config.iterations,
+            supersampling: config.supersampling,
             samples: config.samples,
             min_bounces: config.min_bounces,
             max_bounces: config.max_bounces,
+
             background_color: config.background_color.into(),
             epsilon: config.epsilon,
 
