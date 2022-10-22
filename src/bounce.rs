@@ -13,51 +13,79 @@ pub fn bounces(
     object: &Object,
     intersection: &Intersection,
 ) -> Vec<Bounce> {
-    (0..samples)
-        .map(|_| Bounce {
-            probability: 1.0 / samples as f64,
-            direction: bounce_direction(ray, object, intersection),
-        })
-        .collect()
-}
-
-fn bounce_direction(ray: &Ray, object: &Object, intersection: &Intersection) -> UnitVector3<f64> {
-    let reflection = || math::reflect(&ray.direction, &intersection.normal);
+    let always = |direction| {
+        vec![Bounce {
+            probability: 1.0,
+            direction,
+        }]
+    };
 
     if !math::rand_bool(object.refraction) {
         if object.specular == 1.0 {
-            return reflection();
+            return always(math::reflect(&ray.direction, &intersection.normal));
         }
 
-        let diffuse =
+        let diffuse_rotation =
             Rotation3::rotation_between(&Vector3::z_axis(), &intersection.normal).unwrap_or(
                 Rotation3::from_axis_angle(&Vector3::x_axis(), std::f64::consts::PI),
-            ) * math::rand_direction_z();
+            );
+
+        let probability = 1.0 / samples as f64;
 
         if object.specular == 0.0 {
-            return diffuse;
+            return (0..samples)
+                .map(|_| Bounce {
+                    probability,
+                    direction: diffuse_rotation * math::rand_direction_z(),
+                })
+                .collect();
         }
 
-        return diffuse.slerp(&reflection(), object.specular);
+        let reflection = math::reflect(&ray.direction, &intersection.normal);
+        return (0..samples)
+            .map(|_| Bounce {
+                probability,
+                direction: (diffuse_rotation * math::rand_direction_z())
+                    .slerp(&reflection, object.specular),
+            })
+            .collect();
     }
 
     let incident_eta = if intersection.from_inside { 1.5 } else { 1.0 };
     let refraction_eta = if intersection.from_inside { 1.0 } else { 1.5 };
 
-    if math::rand_bool(math::reflectance(
+    let reflectance = math::reflectance(
         &ray.direction,
         &intersection.normal,
         incident_eta,
         refraction_eta,
-    )) {
-        return reflection();
+    );
+    if reflectance >= 1.0 || samples == 1 && math::rand_bool(reflectance) {
+        return always(math::reflect(&ray.direction, &intersection.normal));
     }
 
-    math::refract(
+    let refraction = math::refract(
         &ray.direction,
         &intersection.normal,
         incident_eta,
         refraction_eta,
-    )
-    .unwrap_or_else(reflection)
+    );
+    if refraction.is_none() {
+        return always(math::reflect(&ray.direction, &intersection.normal));
+    }
+
+    if samples == 1 {
+        return always(refraction.unwrap());
+    }
+
+    vec![
+        Bounce {
+            probability: reflectance,
+            direction: math::reflect(&ray.direction, &intersection.normal),
+        },
+        Bounce {
+            probability: 1.0 - reflectance,
+            direction: refraction.unwrap(),
+        },
+    ]
 }
