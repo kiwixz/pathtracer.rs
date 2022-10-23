@@ -2,7 +2,7 @@ width = 640
 height = 480
 
 iterations = 3
-supersampling = 2
+supersampling = 3
 samples = 20
 bounces = 6
 
