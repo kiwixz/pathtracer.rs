@@ -22,7 +22,7 @@ rotation = [0, 0, 90]
 color = [0.75, 0.25, 0.25]
 
 [[planes]]  # top
-position = [0.0, 16.18, 0.0]
+position = [0.0, 16.0, 0.0]
 rotation = [0, 0, 0]
 color = [0.75, 0.75, 0.75]
 
@@ -48,9 +48,9 @@ color = [0, 0, 0]
 
 
 [[spheres]]  # light
-position = [0.0, 116.1, 0.0]
-radius = 100
-emission = [12, 12, 12]
+position = [0.0, 55.8, 0.0]
+radius = 40
+emission = [20, 20, 20]
 
 [[spheres]]  # mirror
 position = [-4.5, 3.5, -8.0]
