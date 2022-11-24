@@ -1,17 +1,17 @@
-width = 640
-height = 480
+width = 1200
+height = 900
 
-iterations = 3
+iterations = 300
 supersampling = 3
 samples = 20
 bounces = 6
 
 background_color = [0, 0, 0]
-epsilon = 1e-12
+epsilon = 1e-10
 
 [camera]
-position = [0, 10, 40]
-rotation = [0.0, -2.5, 0.0]
+position = [0, 9, 40]
+rotation = [0, -3, 0]
 scale = [1, 1, 1]
 field_of_view = 30
 
@@ -19,27 +19,27 @@ field_of_view = 30
 [[planes]]  # left
 position = [-10, 0, 0]
 rotation = [0, 0, 90]
-color = [0.75, 0.25, 0.25]
+color = [0.1, 0.2, 0.0]
 
 [[planes]]  # top
-position = [0.0, 16.0, 0.0]
+position = [0.0, 15.0, 0.0]
 rotation = [0, 0, 0]
-color = [0.75, 0.75, 0.75]
+color = [0.9, 0.9, 0.9]
 
 [[planes]]  # right
 position = [10, 0, 0]
 rotation = [0, 0, 90]
-color = [0.25, 0.25, 0.75]
+color = [0.2, 0.1, 0.0]
 
 [[planes]]  # bottom
 position = [0, 0, 0]
 rotation = [0, 0, 0]
-color = [0.75, 0.75, 0.75]
+color = [0.9, 0.9, 0.9]
 
 [[planes]]  # back
-position = [0, 0, -18]
+position = [0, 0, -15]
 rotation = [0, 90, 0]
-color = [0.75, 0.75, 0.75]
+color = [0.9, 0.9, 0.9]
 
 [[planes]]  # front
 position = [0, 0, 41]
@@ -48,18 +48,18 @@ color = [0, 0, 0]
 
 
 [[spheres]]  # light
-position = [0.0, 55.8, 0.0]
+position = [0.0, 54.8, 0.0]
 radius = 40
 emission = [20, 20, 20]
 
 [[spheres]]  # mirror
-position = [-4.5, 3.5, -8.0]
+position = [-4.25, 3.25, -4.0]
 radius = 3.25
 color = [1, 1, 1]
 specular = 1
 
 [[spheres]]  # glass
-position = [4.5, 3.5, -1.0]
+position = [4.25, 3.25, 2.0]
 radius = 3.25
 color = [1, 1, 1]
 refraction = 1
