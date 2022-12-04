@@ -10,6 +10,7 @@ use crate::{
     bounce::bounces,
     ray::Ray,
     scene::{Color, Scene},
+    utils::*,
 };
 
 mod bounce;
@@ -18,6 +19,7 @@ mod ray;
 mod scene;
 mod shapes;
 mod thread_pool;
+mod utils;
 
 pub fn run(scene_path: &str, threads: Option<NonZeroUsize>) -> Result<(), Box<dyn Error>> {
     let scene: Arc<Scene> = Arc::new(Scene::open(scene_path)?);
@@ -106,11 +108,16 @@ fn pathtrace_subpixel(scene: &Scene, x: f64, y: f64) -> Color {
 }
 
 fn radiance(scene: &Scene, ray: &Ray, depth: i32, importance: f64) -> Color {
-    let closest_match = scene
-        .objects
-        .iter()
-        .filter_map(|o| Some((o, o.shape.intersect(ray)?)))
-        .min_by(|(_, a), (_, b)| a.distance.partial_cmp(&b.distance).unwrap());
+    let mut closest_match: Option<(&scene::Object, shapes::Intersection)> = None;
+    for next_obj in &scene.objects {
+        if let Some(next_inter) = next_obj
+            .shape
+            .intersect(ray, inspect(&closest_match, |(_, inter)| inter.distance))
+        {
+            closest_match = Some((next_obj, next_inter));
+        }
+    }
+
     if closest_match.is_none() {
         return scene.background_color;
     }

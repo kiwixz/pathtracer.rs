@@ -19,7 +19,7 @@ impl Plane {
 }
 
 impl Shape for Plane {
-    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    fn intersect(&self, ray: &Ray, max_distance: Option<f64>) -> Option<Intersection> {
         let denominator = ray.direction.dot(&self.up);
         if denominator == 0.0 {
             // ray is parallel to plane
@@ -30,6 +30,10 @@ impl Shape for Plane {
         let distance = ray_to_pos.dot(&self.up) / denominator;
         if distance <= 0.0 {
             // plane is behind
+            return None;
+        }
+
+        if max_distance.is_some() && distance > max_distance.unwrap() {
             return None;
         }
 

@@ -19,7 +19,7 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    fn intersect(&self, ray: &Ray, max_distance: Option<f64>) -> Option<Intersection> {
         // "a" is the point found by projecting sphere's position onto the ray
 
         let ray_to_pos = self.position - ray.position;
@@ -43,6 +43,10 @@ impl Shape for Sphere {
                 return None;
             }
             from_inside = true;
+        }
+
+        if max_distance.is_some() && distance > max_distance.unwrap() {
+            return None;
         }
 
         let point = ray.position + ray.direction.scale(distance);
