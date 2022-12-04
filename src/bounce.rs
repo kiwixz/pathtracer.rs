@@ -8,10 +8,10 @@ pub struct Bounce {
 }
 
 pub fn bounces(
-    samples: i32,
     ray: &Ray,
     object: &Object,
     intersection: &Intersection,
+    samples: i32,
 ) -> Vec<Bounce> {
     let always = |direction| {
         vec![Bounce {

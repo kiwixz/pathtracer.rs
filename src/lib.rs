@@ -117,14 +117,14 @@ fn radiance(scene: &Scene, ray: &Ray, depth: i32, importance: f64) -> Color {
     }
     let (obj, inter) = closest_match.unwrap();
 
-    if obj.color == Color::zeros() || depth >= scene.bounces {
+    if obj.color == Color::zeros() || depth == scene.bounces {
         return obj.emission;
     }
 
     let bounces_importance = importance * obj.color.max();
     let bounces_samples =
         std::cmp::max((scene.bounce_samples as f64 * bounces_importance) as i32, 1);
-    let bounces_color: Color = bounces(bounces_samples, ray, obj, &inter)
+    let bounces_color: Color = bounces(ray, obj, &inter, bounces_samples)
         .iter()
         .map(|bounce| {
             radiance(
