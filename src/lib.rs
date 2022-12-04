@@ -74,7 +74,7 @@ fn pathtrace_row(scene: &Scene, y: i32) -> Vec<Color> {
 }
 
 fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
-    (0..scene.supersampling)
+    let color = (0..scene.supersampling)
         .flat_map(|super_y| {
             (0..scene.supersampling).map(move |super_x| {
                 pathtrace_subpixel(
@@ -89,7 +89,14 @@ fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
             })
         })
         .sum::<Color>()
-        / (scene.supersampling * scene.supersampling) as f64
+        / (scene.supersampling * scene.supersampling) as f64;
+
+    let max_component = color.max();
+    if max_component > 1.0 {
+        color / max_component
+    } else {
+        color
+    }
 }
 
 fn pathtrace_subpixel(scene: &Scene, x: f64, y: f64) -> Color {
@@ -104,7 +111,7 @@ fn pathtrace_subpixel(scene: &Scene, x: f64, y: f64) -> Color {
             * Unit::new_normalize(scene.camera.scale * screen_subpixel.coords),
     };
 
-    radiance(scene, &ray, 0, 1.0).map(|a| a.clamp(0.0, 1.0))
+    radiance(scene, &ray, 0, 1.0)
 }
 
 fn radiance(scene: &Scene, ray: &Ray, depth: i32, importance: f64) -> Color {
