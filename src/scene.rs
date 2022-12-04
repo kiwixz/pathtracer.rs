@@ -13,8 +13,8 @@ pub struct Scene {
     pub height: i32,
 
     pub iterations: i32,
-    pub supersampling: i32,
-    pub samples: i32,
+    pub pixel_samples: i32,
+    pub bounce_samples: i32,
     pub bounces: i32,
 
     pub background_color: Color,
@@ -54,8 +54,8 @@ impl Scene {
             height: config.height,
 
             iterations: config.iterations,
-            supersampling: config.supersampling,
-            samples: config.samples,
+            pixel_samples: config.pixel_samples,
+            bounce_samples: config.bounce_samples,
             bounces: config.bounces,
 
             background_color: config.background_color.into(),

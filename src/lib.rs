@@ -74,29 +74,11 @@ fn pathtrace_row(scene: &Scene, y: i32) -> Vec<Color> {
 }
 
 fn pathtrace_pixel(scene: &Scene, x: i32, y: i32) -> Color {
-    let color = (0..scene.supersampling)
-        .flat_map(|super_y| {
-            (0..scene.supersampling).map(move |super_x| {
-                pathtrace_subpixel(
-                    scene,
-                    x as f64
-                        + super_x as f64 / scene.supersampling as f64
-                        + 0.5 / scene.supersampling as f64,
-                    y as f64
-                        + super_y as f64 / scene.supersampling as f64
-                        + 0.5 / scene.supersampling as f64,
-                )
-            })
-        })
-        .sum::<Color>()
-        / (scene.supersampling * scene.supersampling) as f64;
+    let color = (0..scene.pixel_samples)
+        .map(|_| pathtrace_subpixel(scene, x as f64 + math::rand(), y as f64 + math::rand()))
+        .sum::<Color>();
 
-    let max_component = color.max();
-    if max_component > 1.0 {
-        color / max_component
-    } else {
-        color
-    }
+    color / f64::max(color.max(), scene.pixel_samples as f64)
 }
 
 fn pathtrace_subpixel(scene: &Scene, x: f64, y: f64) -> Color {
@@ -135,7 +117,8 @@ fn radiance(scene: &Scene, ray: &Ray, depth: i32, importance: f64) -> Color {
     }
 
     let bounces_importance = importance * obj.color.max();
-    let bounces_samples = std::cmp::max((scene.samples as f64 * bounces_importance) as i32, 1);
+    let bounces_samples =
+        std::cmp::max((scene.bounce_samples as f64 * bounces_importance) as i32, 1);
     let bounces_color: Color = bounces(bounces_samples, ray, obj, &inter)
         .iter()
         .map(|bounce| {

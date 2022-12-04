@@ -1,9 +1,9 @@
 width = 1200
 height = 900
 
-iterations = 300
-supersampling = 3
-samples = 20
+iterations = 1
+pixel_samples = 4
+bounce_samples = 200
 bounces = 6
 
 background_color = [0, 0, 0]
