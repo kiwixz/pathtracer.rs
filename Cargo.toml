@@ -8,6 +8,7 @@ codegen-units = 1
 lto = true
 
 [dependencies]
+clap = { version = "4.0", features = ["derive"] }
 nalgebra = "0.31"
 png = "0.17"
 rand = "0.8"

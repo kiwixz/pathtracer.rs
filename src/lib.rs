@@ -4,10 +4,10 @@ use std::{
     sync::{mpsc, Arc},
 };
 
-use bounce::bounces;
 use nalgebra::{Point3, Unit};
 
 use crate::{
+    bounce::bounces,
     ray::Ray,
     scene::{Color, Scene},
 };
@@ -19,10 +19,12 @@ mod scene;
 mod shapes;
 mod thread_pool;
 
-pub fn run() -> Result<(), Box<dyn Error>> {
-    let scene: Arc<Scene> = Arc::new(Scene::open("scenes/cornell.toml")?);
+pub fn run(scene_path: &str, threads: Option<NonZeroUsize>) -> Result<(), Box<dyn Error>> {
+    let scene: Arc<Scene> = Arc::new(Scene::open(scene_path)?);
+    let workers = threads.unwrap_or_else(|| {
+        std::thread::available_parallelism().unwrap_or(NonZeroUsize::new(1).unwrap())
+    });
 
-    let workers = std::thread::available_parallelism().unwrap_or(NonZeroUsize::new(1).unwrap());
     let (senders, receivers): (Vec<_>, Vec<_>) = (0..scene.iterations)
         .map(|_| mpsc::sync_channel(workers.get() * 2))
         .unzip();
